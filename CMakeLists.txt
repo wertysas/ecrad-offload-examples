@@ -17,5 +17,6 @@ find_package(fiat REQUIRED)
 find_package(field_api REQUIRED)
 find_package(OpenMP COMPONENTS Fortran REQUIRED)
 
+add_subdirectory(cpu_scheme)
 add_subdirectory(hoisted_scheme)
 add_subdirectory(hoisted_ii_scheme)

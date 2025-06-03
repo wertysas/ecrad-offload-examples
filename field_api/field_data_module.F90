@@ -43,7 +43,7 @@ module field_data_module
       integer, intent(in) :: j
       integer, intent(in) :: k
 
-      call field_new(self%f_single_level_cos_sza, ubounds=[i,j], persistent=.TRUE., init_value=0._jprb)
+      call field_new(self%f_single_level_cos_sza, ubounds=[i,k], persistent=.TRUE., init_value=0._jprb)
       call field_new(self%f_flux_sw, ubounds=[i,j,k], persistent=.TRUE., init_value=1._jprb)
       call field_new(self%f_flux_lw, ubounds=[i,j,k], persistent=.TRUE., init_value=2._jprb)
     end subroutine field_data_init
