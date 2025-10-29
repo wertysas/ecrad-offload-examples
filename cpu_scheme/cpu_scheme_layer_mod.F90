@@ -20,6 +20,10 @@ module cpu_scheme_layer_module
     integer                   :: jkglo, kidia, kfdia, ibl, jlon, jlev
     logical                   :: okay = .true.
 
+    type(single_level_type)  :: level
+    type(flux_type)          :: fluxes
+
+
 
     ! initialise field data and copy fields to device
     call fields%init(nproma, klon, klev)
@@ -29,7 +33,12 @@ module cpu_scheme_layer_module
       kfdia=min(nproma, klon-jkglo+1)
       ibl=(jkglo-1)/nproma + 1
       call fields%update_view(ibl)
-      call cpu_scheme(kidia, kfdia, nproma, klev, fields%single_level_cos_sza, fields%flux_sw, fields%flux_lw, okay)
+      ! associate type member pointers to arrays
+      level%cos_sza => fields%single_level_cos_sza(:)
+      fluxes%sw => fields%flux_sw(:,:)
+      fluxes%lw => fields%flux_lw(:,:)
+
+      call cpu_scheme(kidia, kfdia, nproma, klev, level, fluxes, okay)
     end do
 
 

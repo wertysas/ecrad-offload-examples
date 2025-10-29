@@ -9,25 +9,15 @@ module cpu_scheme_module
   contains
 
   ! cpu kernel
-  subroutine cpu_scheme(kidia, kfdia, klon, klev, cos_sza, sw, lw, okay)
+  subroutine cpu_scheme(kidia, kfdia, klon, klev, level, fluxes, okay)
     integer, intent(in)                     :: kidia    ! start column to process
     integer, intent(in)                     :: kfdia    ! end column to process
     integer, intent(in)                     :: klon     ! number of columns (nproma)
     integer, intent(in)                     :: klev     ! number of levels
-    real(kind=jprb), target,  intent(inout) :: cos_sza(:)   ! (klon)
-    real(kind=jprb), target,  intent(inout) :: sw(:,:)      ! (klon,nlev)
-    real(kind=jprb), target,  intent(inout) :: lw(:,:)      ! (klon,nlev)
     logical , intent(inout)                 :: okay
-
-    type(single_level_type)  :: level
-    type(flux_type)          :: fluxes
+    type(single_level_type), intent(inout)  :: level
+    type(flux_type), intent(inout)          :: fluxes
     integer                  :: jlev, jlon
-
-    ! associate type member pointers to arrays
-    level%cos_sza => cos_sza(:)
-    fluxes%sw => sw(:,:)
-    fluxes%lw => lw(:,:)
-
 
     do jlev=1,klev
       do jlon=kidia,kfdia
