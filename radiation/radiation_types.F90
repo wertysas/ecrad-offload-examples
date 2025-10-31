@@ -14,7 +14,7 @@ module radiation_types_module
 
   ! reduced version of ecRAD single_level type
   type single_level_type
-    real(jprb), pointer, dimension(:) :: cos_sza ! (ncol) Cosine of solar zenith angle
+    real(jprb), pointer, dimension(:) :: cos_sza => null() ! (ncol) Cosine of solar zenith angle
     real(jprb) :: solar_irradiance = 1366.0_jprb ! W m-2
 
   contains
@@ -25,7 +25,7 @@ module radiation_types_module
   ! reduced version of ecRAD flux type
   type flux_type
      ! dimensions (ncol,nlev+1).
-     real(jprb), pointer, dimension(:,:) :: lw, sw
+     real(jprb), pointer, dimension(:,:) :: lw => null() , sw => null()
 
    contains
      procedure :: allocate   => allocate_flux_type

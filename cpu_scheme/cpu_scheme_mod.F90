@@ -18,7 +18,7 @@ module cpu_scheme_module
     type(single_level_type), intent(inout)  :: level
     type(flux_type), intent(inout)          :: fluxes
     integer                  :: jlev, jlon
-
+!$acc routine seq
     do jlev=1,klev
       do jlon=kidia,kfdia
         if (fluxes%sw(jlon,jlev) /= 1) okay = .false.
