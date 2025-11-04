@@ -28,15 +28,11 @@ module field_wrapper_scheme_layer_module
     call flux_wrapper%init(nproma, klon, klev, on_gpu=.true.)
     call flux_wrapper%attach()
   
-
-    ! copy radiation types to device
-    !$acc enter data copyin(single_level, flux)
-
+!     ! copy radiation types to device
+!     !$acc enter data copyin(single_level, flux)
     ! open acc structured data region
-    !$acc data copy(okay) &
-    !$acc & present(single_level_wrapper, single_level, flux_wrapper, flux)
-
-    !$acc parallel loop gang vector_length(nproma)
+    !$acc data copy(okay) present(single_level_wrapper, flux_wrapper)
+    !$acc parallel loop gang vector_length(nproma), private(single_level, flux)
     do jkglo = 1,klon, nproma
       kidia=1
       kfdia=min(nproma, klon-jkglo+1)
@@ -50,7 +46,8 @@ module field_wrapper_scheme_layer_module
     end do
 
     !$acc end data
-    
+    !$acc exit data delete(single_level, flux)
+
     ! detach device wrappers
     call single_level_wrapper%detach()
     call flux_wrapper%detach()

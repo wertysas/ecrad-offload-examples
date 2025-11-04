@@ -20,6 +20,7 @@ module radiation_field_type_module
   type single_level_field_type
       ! view access pointers
       real(kind=jprb), pointer, contiguous :: single_level_cos_sza(:)
+      real(kind=jprb), pointer, contiguous :: single_level_cos_sza_d(:,:)
       ! field holding data
       class(field_2rb), pointer :: f_single_level_cos_sza
       logical :: on_gpu = .false.
@@ -36,7 +37,9 @@ module radiation_field_type_module
   type flux_field_type
       ! view access pointers
       real(kind=jprb), pointer, contiguous :: flux_sw(:,:)
+      real(kind=jprb), pointer, contiguous :: flux_sw_d(:,:,:)
       real(kind=jprb), pointer, contiguous :: flux_lw(:,:)
+      real(kind=jprb), pointer, contiguous :: flux_lw_d(:,:,:)
         ! flux type fields
       class(field_3rb), pointer :: f_flux_sw, f_flux_lw
       logical :: on_gpu = .false.
@@ -67,7 +70,7 @@ module radiation_field_type_module
       call field_new(self%f_single_level_cos_sza, ubounds=[i,k], persistent=.TRUE., init_value=0._jprb)
 
       if (self%on_gpu) then
-        call self%f_single_level_cos_sza%sync_device_rdwr()
+        call self%f_single_level_cos_sza%get_device_data_rdwr(self%single_level_cos_sza_d)
       end if
     end subroutine single_level_field_init
 
@@ -81,7 +84,9 @@ module radiation_field_type_module
       class(single_level_field_type)   :: self
       integer, intent(in) :: k
 
-      if ( associated(self%f_single_level_cos_sza) ) self%single_level_cos_sza => self%f_single_level_cos_sza%get_view(k)
+      if ( associated(self%f_single_level_cos_sza) ) then
+        self%single_level_cos_sza => self%f_single_level_cos_sza%get_view(k)
+      end if
     end subroutine single_level_field_update_view
 
     subroutine single_level_field_associate_pointers(self, single_level, k)
@@ -91,7 +96,7 @@ module radiation_field_type_module
       integer,                          intent(in)    :: k
 
       if ( associated(self%f_single_level_cos_sza) ) then
-        single_level%cos_sza => self%f_single_level_cos_sza%devptr(:,k)
+        single_level%cos_sza => self%single_level_cos_sza_d(:,k)
       end if
     end subroutine single_level_field_associate_pointers
 
@@ -99,16 +104,14 @@ module radiation_field_type_module
       class(single_level_field_type)    :: self
 
       !$acc enter data copyin(self)
-      !$acc enter data attach(self%f_single_level_cos_sza)
-      !$acc enter data attach(self%f_single_level_cos_sza%devptr)
+      !$acc enter data attach(self%single_level_cos_sza_d)
 
     end subroutine single_level_field_attach
 
     subroutine single_level_field_detach(self)
       class(single_level_field_type)    :: self
 
-      !$acc exit data detach(self%f_single_level_cos_sza%devptr)
-      !$acc exit data detach(self%f_single_level_cos_sza)
+      !$acc exit data detach(self%single_level_cos_sza_d)
       !$acc exit data delete(self)
 
     end subroutine single_level_field_detach
@@ -131,8 +134,8 @@ module radiation_field_type_module
       call field_new(self%f_flux_lw, ubounds=[i,j,k], persistent=.TRUE., init_value=2._jprb)
 
       if (self%on_gpu) then
-        call self%f_flux_sw%sync_device_rdwr()
-        call self%f_flux_lw%sync_device_rdwr()
+        call self%f_flux_sw%get_device_data_rdwr(self%flux_sw_d)
+        call self%f_flux_lw%get_device_data_rdwr(self%flux_lw_d)
       end if
     end subroutine flux_field_init
 
@@ -157,15 +160,15 @@ module radiation_field_type_module
 
     subroutine flux_field_associate_pointers(self, flux, k)
     !$acc routine seq
-      class(flux_field_type), intent(inout) :: self
-      class(flux_type),       intent(inout) :: flux
+    type(flux_field_type), intent(inout) :: self
+    type(flux_type),       intent(inout) :: flux
       integer,                intent(in)    :: k
 
       if ( associated(self%f_flux_sw) ) then
-        flux%sw => self%f_flux_sw%devptr(:,:,k)
+        flux%sw => self%flux_sw_d(:,:,k)
       end if
       if ( associated(self%f_flux_lw) ) then
-        flux%lw => self%f_flux_lw%devptr(:,:,k)
+        flux%lw => self%flux_lw_d(:,:,k)
       end if
     end subroutine flux_field_associate_pointers
 
@@ -174,13 +177,11 @@ module radiation_field_type_module
       
       !$acc enter data copyin(self)
 
-      if ( associated(self%f_flux_sw) ) then
-        !$acc enter data attach(self%f_flux_sw)
-        !$acc enter data attach(self%f_flux_sw%devptr)
-      end if
       if ( associated(self%f_flux_lw) ) then
-        !$acc enter data attach(self%f_flux_lw)
-        !$acc enter data attach(self%f_flux_sw%devptr)
+        !$acc enter data attach(self%flux_lw_d)
+      end if
+      if ( associated(self%f_flux_sw) ) then
+        !$acc enter data attach(self%flux_sw_d)
       end if
 
     end subroutine flux_field_attach
@@ -190,12 +191,10 @@ module radiation_field_type_module
       
 
       if ( associated(self%f_flux_sw) ) then
-        !$acc exit data detach(self%f_flux_sw%devptr)
-        !$acc exit data detach(self%f_flux_sw)
+        !$acc exit data detach(self%flux_sw_d)
       end if
       if ( associated(self%f_flux_lw) ) then
-        !$acc exit data detach(self%f_flux_sw%devptr)
-        !$acc exit data detach(self%f_flux_lw)
+        !$acc exit data detach(self%flux_sw_d)
       end if
 
       !$acc exit data delete(self)
